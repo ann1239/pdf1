@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Co-Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+    </script>
+    <style>
+        .viewer { max-width: 80%; margin: auto; }
+        #pdf-canvas { border: 1px solid black; width: 100%; }
+        #controls { display: flex; justify-content: center; margin-top: 10px; }
+        .button { padding: 5px 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>PDF Co-Viewer</h2>
+    <div id="role-selection">
+        <button onclick="setRole('admin')" class="button">I'm the Presenter</button>
+        <button onclick="setRole('viewer')" class="button">I'm a Viewer</button>
+    </div>
+    <div id="controls" style="display: none;">
+        <button onclick="changePage(-1)" class="button">Previous</button>
+        <span>Page: <span id="page-number">1</span></span>
+        <button onclick="changePage(1)" class="button">Next</button>
+    </div>
+    <div class="viewer">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+    <script>
+        const socket = io();  // Connect to the server
+        let pdfDoc = null, pageNum = 1, isAdmin = false;
+
+        // Path to the PDF file (Ensure the path is correct for your project)
+        const pdfUrl = 'sample.pdf';  // This PDF file should be in the 'public' folder
+
+        // Initialize PDF.js and load the PDF
+        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
+            pdfDoc = doc;
+            renderPage(pageNum);
+        });
+
+        // Render the PDF page on the canvas
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(page => {
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
+                const canvas = document.getElementById('pdf-canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                page.render({ canvasContext: context, viewport }).promise.then(() => {
+                    document.getElementById('page-number').textContent = num;
+                });
+            });
+        }
+
+        // Set the role of the user (admin or viewer)
+        function setRole(role) {
+            isAdmin = (role === 'admin');
+            document.getElementById('controls').style.display = isAdmin ? 'flex' : 'none';
+        }
+
+        // Change page if admin
+        function changePage(offset) {
+            if (isAdmin) {
+                pageNum = Math.max(1, Math.min(pdfDoc.numPages, pageNum + offset));
+                renderPage(pageNum);
+                socket.emit('page_change', { page: pageNum });
+            }
+        }
+
+        // Listen for updates from the server and update the page
+        socket.on('update_page', data => {
+            if (!isAdmin) {
+                pageNum = data.page;
+                renderPage(pageNum);
+            }
+        });
+    </script>
+</body>
+</html>
