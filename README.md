@@ -16,8 +16,11 @@ Designed a clean, responsive interface using custom CSS. The app has vibrant, in
 Technologies Used:-
 
 Node.js & Express: I used Node.js and Express to set up the backend server. Express serves the static files, including the HTML, CSS, JavaScript, and PDF files.
+
 Socket.io: Socket.io enables real-time communication, so changes made by the Presenter are broadcast to all Viewers instantly.
+
 PDF.js: I integrated PDF.js to render the PDF within the browser, making it possible to display each page in a <canvas> element.
+
 CSS: The styling is custom-built to give the app a professional, modern feel, with smooth transitions and responsive design elements.
 
 How It Works:-
